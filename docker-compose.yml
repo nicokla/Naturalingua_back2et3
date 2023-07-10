@@ -1,0 +1,152 @@
+version: "3.7"
+
+services:
+  # nginx:
+  #   build:
+  #     context: ./nginx
+  #     args:
+  #       DOMAIN: ${DOMAIN}
+  #       EMAIL: ${EMAIL}
+  #       FLASK: application
+  #   ports:
+  #     - 80:80
+  #     - 443:443
+  #   volumes:
+  #     - /etc/letsencrypt:/etc/letsencrypt
+  #   depends_on:
+  #     - application
+  #   restart: unless-stopped
+
+  application:
+    image: master-image
+    volumes:
+      - ./project:/opt/app
+      - my_volume:/home/flask/mytmp
+    build: ./project
+    command: gunicorn --bind 0.0.0.0:5000 --workers 1 server:app
+    # flask run --host=0.0.0.0
+    # tail -F anything # python3 server/__init__.py
+    # python server/__init__.py
+    # gunicorn --bind 0.0.0.0:5000 --workers 1 server:app
+    environment:
+      - FLASK_ENV=${FLASK_ENV}
+      - FLASK_APP=server
+    ports:
+      - 5000:5000
+    restart: unless-stopped
+    links:
+      - redis
+    depends_on:
+      - redis
+  worker:
+    image: worker-image
+    # image: master-image:latest
+    build: ./worker
+    command: python server/__init__.py
+    volumes:
+      - ./worker:/opt/app
+      - my_volume:/home/flask/mytmp
+      # - ./mytmp:/home/flask/mytmp
+    # rq worker --url redis://redis:6379/0
+    # python server/__init__.py
+    # tail -F anything
+    depends_on:
+      - redis
+    links:
+      - redis
+    restart: unless-stopped
+  redis:
+    image: redis
+    restart: unless-stopped
+    # ports:
+    #   - "6379:6379"
+volumes:
+  my_volume:
+  
+# my_volume:./mytmp/
+
+
+# ==========================
+
+# docker stop $(docker ps -a -q)
+# docker rm -f $(docker ps -a -q)
+# docker rmi -f $(docker images -a -q)
+# docker volume rm $(docker volume ls -q)
+# docker network rm $(docker network ls | tail -n+2 | awk '{if($2 !~ /bridge|none|host/){ print $1 }}')
+# docker volume prune
+
+# =========================
+
+# CONTAINER_ID=$(docker ps -aqf "name=worker")
+# echo $CONTAINER_ID
+# docker exec -it $CONTAINER_ID /bin/bash
+# cd /home/flask/.fonts
+# ls
+# docker exec $CONTAINER_ID bash -c "mkdir /home/flask/.fonts"
+# docker cp worker/fonts/NotoSansJP-Light.otf $CONTAINER_ID:/home/flask/.fonts/NotoSansJP-Light.otf
+
+# mkdir -p /home/flask/mytmp
+# docker exec $CONTAINER_ID bash -c "chown flask:app /home/flask/.fonts"
+
+# ==============
+
+# netstat -tuplen
+# docker volume create --name my_volume
+# cd mytmp
+# docker run --rm -v $PWD:/source -v my_volume:/dest -w /source alpine cp -R ./ /dest
+
+
+# =============================
+
+# import pdb; pdb.set_trace()
+
+# .decode('utf-8','strict')
+# .encode('utf-8')
+
+# =================
+
+# https://github.com/moby/moby/issues/25245
+# docker container create --name dummy -v myvolume:/root hello-world
+# docker cp c:\myfolder\myfile.txt dummy:/root/myfile.txt
+# docker rm dummy
+
+# docker volume create --name my_volume
+# docker run --rm -v $PWD:/source -v my_volume:/dest -w /source alpine cp -R ./ /dest
+# docker run --rm -v $PWD:/source -v my_volume:/dest -w /source alpine cp -R ./ /dest
+
+
+
+
+# volumes:
+#   - type: volume
+#     source: ./project
+#     target: /opt/app
+#     volume:
+#       nocopy: true
+
+
+
+
+# deploy:
+  # resources:
+  #   limits:
+      # cpus: '0.001'
+      # memory: 1000M
+    # reservations:
+    #   cpus: '0.0001'
+    #   memory: 20M
+
+
+
+
+# https://stackoverflow.com/questions/40905761/how-do-i-mount-a-host-directory-as-a-volume-in-docker-compose
+# https://docs.docker.com/compose/compose-file/compose-file-v3/#volumes
+    # volumes:
+    #   - type: volume
+    #     source: mydata
+    #     target: /data
+    #     volume:
+    #       nocopy: true
+    #   - type: bind
+    #     source: ./static
+    #     target: /opt/app/static
